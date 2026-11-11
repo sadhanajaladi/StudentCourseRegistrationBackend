@@ -1,5 +1,8 @@
-
 package com.studentregistration.service;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import java.util.List;
 import java.util.Locale;
@@ -12,6 +15,8 @@ import com.studentregistration.repository.CourseRepository;
 
 @Service
 public class CourseService {
+
+    private static final Logger log = LoggerFactory.getLogger(CourseService.class);
 
     private final CourseRepository courseRepository;
 

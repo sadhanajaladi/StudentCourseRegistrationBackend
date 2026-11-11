@@ -1,5 +1,8 @@
-
 package com.studentregistration.service;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import java.util.Locale;
 
@@ -18,6 +21,8 @@ import com.studentregistration.repository.UserRepository;
 
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;

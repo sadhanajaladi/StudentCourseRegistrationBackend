@@ -43,14 +43,26 @@ application-local.properties
 document-storage/
 reports/
 
-# Local logs
-*.log
+# Maven
 target/
+
+# STS / Eclipse
 .classpath
 .project
 .settings/
+
+# IDE
 .idea/
 .vscode/
-*.log
+
+# Environment variables and secrets
 .env
-application-local.properties
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Local configuration
+application-local.properties# Runtime logs
+logs/

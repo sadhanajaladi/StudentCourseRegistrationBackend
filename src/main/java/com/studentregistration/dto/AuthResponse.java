@@ -1,5 +1,6 @@
-
 package com.studentregistration.dto;
+
+
 
 public class AuthResponse {
 

@@ -1,15 +1,18 @@
-
 package com.studentregistration.document;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,11 +26,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api/documents")
 public class DocumentController {
+
+    private static final Logger log = LoggerFactory.getLogger(DocumentController.class);
 
     private final DocumentService documentService;
 
@@ -37,12 +41,10 @@ public class DocumentController {
 
     // Get document version history
     @GetMapping("/{documentId}/versions")
-    public List<DocumentVersion> getVersionHistory(
-            @PathVariable Long documentId) {
+    public List<DocumentVersion> getVersionHistory(@PathVariable Long documentId) {
+        log.info("[DocumentController] Version history requested for document ID: {}", documentId);
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         documentService.checkDocumentReadAccess(documentId, authentication);
 
         return documentService.getVersionHistory(documentId);
@@ -56,9 +58,9 @@ public class DocumentController {
             @RequestParam("file") MultipartFile file)
             throws IOException {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+        log.info("[DocumentController] Uploading new document: '{}', type: {}", name, type);
 
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String ownerEmail = authentication.getName();
 
         Document document = documentService.uploadFirstVersion(
@@ -87,9 +89,9 @@ public class DocumentController {
             @RequestParam("file") MultipartFile file)
             throws IOException {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+        log.info("[DocumentController] Uploading new version for document ID: {}", documentId);
 
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String uploadedBy = authentication.getName();
 
         DocumentVersion version = documentService.uploadNewVersion(
@@ -113,24 +115,21 @@ public class DocumentController {
             @PathVariable Long documentId,
             @PathVariable Integer versionNumber) {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+        log.info("[DocumentController] Download requested for doc ID: {}, version: {}", documentId, versionNumber);
 
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         documentService.checkDocumentReadAccess(documentId, authentication);
 
         try {
-            DocumentVersion version =
-                    documentService.getDocumentVersion(
-                            documentId,
-                            versionNumber
-                    );
+            DocumentVersion version = documentService.getDocumentVersion(documentId, versionNumber);
 
-            Path filePath = Paths.get(version.getFilePath())
-                    .toAbsolutePath()
-                    .normalize();
-
+            Path filePath = Paths.get(version.getFilePath()).toAbsolutePath().normalize();
             Resource resource = new UrlResource(filePath.toUri());
-
+            System.out.println("Database file path: " + version.getFilePath());
+            System.out.println("Resolved file path: " + filePath);
+            System.out.println("File exists: " + Files.exists(filePath));
+            System.out.println("File readable: " + Files.isReadable(filePath));
+            System.out.println("Absolute path: " + filePath.toAbsolutePath());
             if (!resource.exists() || !resource.isReadable()) {
                 throw new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
@@ -138,15 +137,16 @@ public class DocumentController {
                 );
             }
 
-            String filename = Paths.get(
-                    version.getOriginalFileName()
-            ).getFileName().toString();
+            String filename = Paths.get(version.getOriginalFileName()).getFileName().toString();
+            MediaType mediaType = filename.toLowerCase().endsWith(".pdf")
+                    ? MediaType.APPLICATION_PDF : MediaType.APPLICATION_OCTET_STREAM;
 
             return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .contentType(mediaType)
                     .header(
                             HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=\"" + filename + "\""
+                            (mediaType.equals(MediaType.APPLICATION_PDF) ? "inline" : "attachment")
+                                    + "; filename=\"" + filename + "\""
                     )
                     .body(resource);
 
@@ -164,19 +164,15 @@ public class DocumentController {
     public ResponseEntity<Resource> downloadLatestDocumentVersion(
             @PathVariable Long documentId) {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+        log.info("[DocumentController] Download latest requested for doc ID: {}", documentId);
 
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         documentService.checkDocumentReadAccess(documentId, authentication);
 
         try {
-            DocumentVersion version =
-                    documentService.getLatestDocumentVersion(documentId);
+            DocumentVersion version = documentService.getLatestDocumentVersion(documentId);
 
-            Path filePath = Paths.get(version.getFilePath())
-                    .toAbsolutePath()
-                    .normalize();
-
+            Path filePath = Paths.get(version.getFilePath()).toAbsolutePath().normalize();
             Resource resource = new UrlResource(filePath.toUri());
 
             if (!resource.exists() || !resource.isReadable()) {
@@ -186,15 +182,16 @@ public class DocumentController {
                 );
             }
 
-            String filename = Paths.get(
-                    version.getOriginalFileName()
-            ).getFileName().toString();
+            String filename = Paths.get(version.getOriginalFileName()).getFileName().toString();
+            MediaType mediaType = filename.toLowerCase().endsWith(".pdf")
+                    ? MediaType.APPLICATION_PDF : MediaType.APPLICATION_OCTET_STREAM;
 
             return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .contentType(mediaType)
                     .header(
                             HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=\"" + filename + "\""
+                            (mediaType.equals(MediaType.APPLICATION_PDF) ? "inline" : "attachment")
+                                    + "; filename=\"" + filename + "\""
                     )
                     .header(
                             "X-Document-Version",
@@ -213,16 +210,13 @@ public class DocumentController {
 
     // Checkout document - owner only
     @PostMapping("/{documentId}/checkout")
-    public Map<String, Object> checkOutDocument(
-            @PathVariable Long documentId) {
+    public Map<String, Object> checkOutDocument(@PathVariable Long documentId) {
+        log.info("[DocumentController] Checkout requested for document ID: {}", documentId);
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = authentication.getName();
 
-        Document document =
-                documentService.checkOutDocument(documentId, userEmail);
+        Document document = documentService.checkOutDocument(documentId, userEmail);
 
         return Map.of(
                 "message", "Document checked out successfully",
@@ -242,9 +236,9 @@ public class DocumentController {
             @RequestParam("file") MultipartFile file)
             throws IOException {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+        log.info("[DocumentController] Checkin requested for document ID: {}", documentId);
 
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = authentication.getName();
 
         DocumentVersion version = documentService.checkInDocument(
@@ -266,10 +260,9 @@ public class DocumentController {
     @GetMapping("/my")
     @PreAuthorize("hasRole('STUDENT')")
     public List<Document> getMyDocuments() {
+        log.info("[DocumentController] Student fetching own documents");
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String ownerEmail = authentication.getName();
 
         return documentService.getMyDocuments(ownerEmail);
@@ -279,6 +272,7 @@ public class DocumentController {
     @GetMapping("/admin/all")
     @PreAuthorize("hasRole('ADMIN')")
     public List<Document> getAllDocuments() {
+        log.info("[DocumentController] Admin fetching all documents");
 
         return documentService.getAllDocuments();
     }

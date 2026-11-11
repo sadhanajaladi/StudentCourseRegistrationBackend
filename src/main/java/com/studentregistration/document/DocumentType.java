@@ -1,5 +1,6 @@
-
 package com.studentregistration.document;
+
+
 
 public enum DocumentType {
     ID_PROOF,

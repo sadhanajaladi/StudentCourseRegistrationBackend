@@ -1,5 +1,6 @@
-
 package com.studentregistration.document;
+
+
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

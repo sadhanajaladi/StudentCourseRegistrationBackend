@@ -1,5 +1,8 @@
-
 package com.studentregistration.document;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,6 +16,8 @@ import java.util.UUID;
 
 @Service
 public class DocumentStorageService {
+
+    private static final Logger log = LoggerFactory.getLogger(DocumentStorageService.class);
 
     private final Path storageDirectory =
             Paths.get("document-storage").toAbsolutePath().normalize();

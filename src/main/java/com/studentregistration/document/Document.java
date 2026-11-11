@@ -1,5 +1,6 @@
-
 package com.studentregistration.document;
+
+
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

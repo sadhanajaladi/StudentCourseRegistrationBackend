@@ -1,5 +1,8 @@
-
 package com.studentregistration.document;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +15,8 @@ import java.io.IOException;
 
 @Service
 public class DocumentService {
+
+    private static final Logger log = LoggerFactory.getLogger(DocumentService.class);
 
     private final DocumentRepository documentRepository;
     private final DocumentVersionRepository documentVersionRepository;

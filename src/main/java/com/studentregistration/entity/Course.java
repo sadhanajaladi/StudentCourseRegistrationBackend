@@ -1,5 +1,6 @@
-
 package com.studentregistration.entity;
+
+
 
 import java.time.LocalDateTime;
 
@@ -10,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Pattern;
 
 @Entity
 @Table(name = "courses")
@@ -23,6 +25,7 @@ public class Course {
     private String title;
 
     @Column(nullable = false, unique = true)
+    @Pattern(regexp = "^[A-Z0-9-]{3,20}$", message = "Course code must be 3-20 uppercase alphanumeric characters or hyphens (e.g. CS101)")
     private String courseCode;
 
     @Column(length = 1000)

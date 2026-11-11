@@ -1,5 +1,6 @@
-
 package com.studentregistration.config;
+
+
 
 import java.util.List;
 
@@ -62,28 +63,29 @@ public class SecurityConfig {
             .logout(logout -> logout.disable())
 
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            	    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                .requestMatchers(
-                    "/api/auth/signup",
-                    "/api/auth/login"
-                ).permitAll()
+            	    .requestMatchers(
+            	        "/api/auth/signup",
+            	        "/api/auth/login"
+            	    ).permitAll()
 
-                .requestMatchers(HttpMethod.GET, "/api/courses/**")
-                    .hasAnyRole("STUDENT", "ADMIN")
+            	    .requestMatchers("/api/auth/logout").authenticated()
 
-                .requestMatchers(HttpMethod.POST, "/api/courses/**")
-                    .hasRole("ADMIN")
+            	    .requestMatchers(HttpMethod.GET, "/api/courses/**")
+            	        .hasAnyRole("STUDENT", "ADMIN")
 
-                .requestMatchers("/api/admin/**")
-                    .hasRole("ADMIN")
+            	    .requestMatchers(HttpMethod.POST, "/api/courses/**")
+            	        .hasRole("ADMIN")
 
-                .requestMatchers("/api/student/**")
-                    .hasRole("STUDENT")
+            	    .requestMatchers("/api/admin/**")
+            	        .hasRole("ADMIN")
 
-                .anyRequest().authenticated()
-            )
+            	    .requestMatchers("/api/student/**")
+            	        .hasRole("STUDENT")
 
+            	    .anyRequest().authenticated()
+            	)
             // Read and validate JWTs before Spring's username/password filter.
             .addFilterBefore(
                 jwtAuthenticationFilter,
@@ -100,7 +102,7 @@ public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
 
     configuration.setAllowedOrigins(
-        List.of("http://localhost:5500")
+        List.of("http://localhost:5500", "http://127.0.0.1:5500", "http://localhost:5173", "http://localhost:3000", "http://localhost:8080")
     );
 
     configuration.setAllowedMethods(

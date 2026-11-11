@@ -1,5 +1,6 @@
-
 package com.studentregistration.document;
+
+
 
 import java.util.List;
 
@@ -7,9 +8,13 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class DocumentAnnotationService {
+
+    private static final Logger log = LoggerFactory.getLogger(DocumentAnnotationService.class);
 
     private final DocumentRepository documentRepository;
     private final DocumentVersionRepository documentVersionRepository;
@@ -97,7 +102,10 @@ public class DocumentAnnotationService {
         annotation.setComment(comment);
         annotation.setCreatedBy(userEmail);
 
-        return annotationRepository.save(annotation);
+        DocumentAnnotation saved = annotationRepository.save(annotation);
+        log.info("Annotation {} created for document {} version {} by {}",
+                saved.getId(), documentId, versionNumber, userEmail);
+        return saved;
     }
 
     // Get annotations - document owner or Admin
@@ -117,9 +125,12 @@ public class DocumentAnnotationService {
                     "Document version not found.");
         }
 
-        return annotationRepository
-                .findByDocumentIdAndVersionNumberOrderByCreatedAtDesc(
+        List<DocumentAnnotation> annotations =
+                annotationRepository.findByDocumentIdAndVersionNumberOrderByCreatedAtDesc(
                         documentId, versionNumber);
+        log.debug("Retrieved {} annotations for document {} version {} by {}",
+                annotations.size(), documentId, versionNumber, authentication.getName());
+        return annotations;
     }
 
     // Count annotations - document owner or Admin
